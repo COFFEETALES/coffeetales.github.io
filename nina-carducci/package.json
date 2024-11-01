@@ -1,0 +1,14 @@
+{
+  "name": "nina-carducci-dev",
+  "version": "0.0.1",
+  "scripts": {
+    "make": "postcss assets/style.css -o assets/style.min.css & terser --compress --mangle --output assets/maugallery.min.js -- assets/maugallery.js & terser --compress --mangle --output assets/scripts.min.js -- assets/scripts.js & postcss assets/bootstrap/bootstrap.css -o assets/bootstrap/bootstrap.min.css"
+  },
+  "devDependencies": {
+    "postcss": "^8.0.0",
+    "postcss-cli": "^8.0.0",
+    "cssnano": "^7.0.0",
+    "terser": "^5.0.0",
+    "purify-css": "^1.2.0"
+  }
+}
