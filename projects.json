@@ -1,0 +1,78 @@
+[
+  {
+    "id": "sophiebluel",
+    "title": "PORTFOLIO SOPHIE BLUEL",
+    "subtitle": "Artiste photographe",
+    "cover": "/project-sbluel-1.webp",
+    "pictures": [
+      "/project-sbluel-1.webp",
+      "/project-sbluel-2.webp",
+      "/project-sbluel-3.webp"
+    ],
+    "description": "Ce projet consistait à réaliser la partie front-end du portfolio d'une photographe, en JavaScript, tout en intégrant des WebComponents pour rendre le contenu modulable et réactif.\n\nL'une des principales problématiques était de garantir une structure de code claire et scalable, ce que nous avons résolu en adoptant un schéma inspiré de l'architecture MVC et en optimisant le code grâce à Closure Compiler. Cette approche a permis de séparer efficacement les responsabilités, assurant une excellente maintenabilité et offrant la possibilité d'ajouter de futures fonctionnalités sans difficulté.\n\nAu final, ce travail a renforcé mes compétences en conception modulaire, en optimisation JavaScript et en structuration de projet, tout en apportant une grande polyvalence au portfolio.",
+    "ressources": [
+      "https://github.com/COFFEETALES/Portfolio-architecte-sophie-bluel"
+    ],
+    "tags": [
+      "Portfolio",
+      "WebComponents",
+      "Closure Compiler"
+    ]
+  },
+  {
+    "id": "coffeetales",
+    "title": "COFFEETALES.NET",
+    "subtitle": "Blog à vocation technique",
+    "cover": "/project-coffeetales-1.webp",
+    "pictures": [
+      "/project-coffeetales-1.webp",
+      "/project-coffeetales-2.webp",
+      "/project-coffeetales-3.webp"
+    ],
+    "description": "Coffeetales.net est un espace de partage et d'échanges autour du développement web et de l'architecture logicielle. J'y aborde des problématiques courantes, comme l'optimisation de scripts PowerShell ou la mise en œuvre de concepts avancés (clôtures lexicales, bonnes pratiques d'ingénierie).\n\nLe défi principal a été de créer un contenu à la fois technique et accessible, afin de toucher un large éventail de lecteurs, qu'ils soient débutants ou confirmés.\n\nJ'ai ainsi amélioré mes compétences en rédaction technique, en vulgarisation de concepts complexes et en maintenance de plateformes de blogging. Ce blog se veut une référence pour celles et ceux qui souhaitent approfondir ou consolider leurs connaissances en matière de développement.",
+    "ressources": [
+      "https://www.coffeetales.net"
+    ],
+    "tags": [
+      "Blog",
+      "Passion",
+      "Devlog"
+    ]
+  },
+  {
+    "id": "wasm2asmjs",
+    "title": "WASM2ASMJS",
+    "subtitle": "Retour aux sources",
+    "cover": "/project-wasm2asmjs.webp",
+    "pictures": [
+      "/project-wasm2asmjs.webp"
+    ],
+    "description": "Wasm2asmjs est un outil permettant de convertir du code WebAssembly en Asm.js, un sous-ensemble fortement typé de JavaScript. L'idée est d'assurer une exécution fluide et performante même dans les environnements qui ne prennent pas encore en charge WebAssembly.\n\nLe principal défi résidait dans la gestion des optimisations pour garantir que le code converti reste rapide et efficace, tout en préservant la compatibilité sur des moteurs JavaScript plus anciens.\n\nCette solution a élargi mes compétences en interopérabilité et en optimisation, tout en me familiarisant avec les mécanismes d'exécution sous-jacents de JavaScript et WebAssembly.",
+    "ressources": [
+      "https://github.com/COFFEETALES/wasm2asmjs"
+    ],
+    "tags": [
+      "WebAssembly",
+      "Asm.js",
+      "Transpilateur"
+    ]
+  },
+  {
+    "id": "demojr",
+    "title": "VITRINE ET DÉMO TECHNIQUE",
+    "subtitle": "Une exploitation de l'outil Wasm2asmjs",
+    "cover": "/project-demojr-1.webp",
+    "pictures": [
+      "/project-demojr-1.webp"
+    ],
+    "description": "Ce site propose une démonstration concrète de Wasm2asmjs en action, à travers l'animation d'un effet parallax avec navigation horizontale. L'objectif était de mesurer et d'illustrer l'apport d'Asm.js en termes de performance, surtout dans un contexte d'animations exigeantes.\n\nLes problèmes rencontrés concernaient la fluidité et le besoin de maintenir une compatibilité optimale, notamment sur des navigateurs plus anciens.\n\nEn maîtrisant la conversion de WebAssembly vers Asm.js, j'ai pu acquérir une meilleure compréhension des rouages de l'optimisation front-end et ainsi offrir une expérience utilisateur fluide sur la plupart des appareils et navigateurs.",
+    "ressources": [
+      "https://coffeetales.net/joffrey/romero/"
+    ],
+    "tags": [
+      "Démo Wasm2asmjs",
+      "Parallax",
+      "Vitrine"
+    ]
+  }
+]
