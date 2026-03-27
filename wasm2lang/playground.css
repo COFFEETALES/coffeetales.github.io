@@ -1,0 +1,310 @@
+/* ── reset ── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── layout ── */
+
+body {
+  font-family: "Montserrat", sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  padding: 24px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 20px;
+}
+
+h1 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #e6edf3;
+}
+
+.github-link {
+  font-size: 0.78rem;
+  color: #8b949e;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.github-link:hover {
+  color: #e6edf3;
+}
+
+.github-link svg {
+  vertical-align: -3px;
+  margin-right: 3px;
+}
+
+h1 .subtitle {
+  font-weight: 400;
+  color: #8b949e;
+}
+
+/* ── controls ── */
+
+.controls {
+  display: table;
+  padding-bottom: 24px;
+  align-self: flex-start;
+}
+
+.controls > label,
+.controls > .btn-cell {
+  display: table-cell;
+  vertical-align: bottom;
+  padding-right: 12px;
+  white-space: nowrap;
+}
+
+.controls > .btn-cell {
+  padding-right: 0;
+}
+
+.controls > label {
+  font-size: 0.75rem;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.controls > label > select {
+  display: block;
+  margin-top: 4px;
+}
+
+select,
+button {
+  font-family: inherit;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+select {
+  background: #161b22;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  padding: 6px 10px;
+}
+
+select:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+button {
+  font-weight: 600;
+  background: #238636;
+  color: #fff;
+  border: 1px solid #2ea043;
+  padding: 6px 20px;
+}
+
+button:hover:not(:disabled) {
+  background: #2ea043;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── editor grid ── */
+
+.editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 14px 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+.pane-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b949e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+}
+
+.pane-header select {
+  font-size: 0.78rem;
+  padding: 4px 8px;
+}
+
+/* ── code editor (textarea + highlight overlay) ── */
+
+.code-editor {
+  position: relative;
+  min-height: 0;
+}
+
+.code-editor textarea,
+.code-editor pre,
+.code-editor code {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: 0px;
+  word-spacing: 0px;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  padding: 12px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+}
+
+.code-editor textarea,
+.code-editor pre {
+  position: absolute;
+  inset: 0;
+}
+
+.code-editor textarea {
+  background: transparent;
+  color: transparent;
+  caret-color: #e6edf3;
+  resize: none;
+  z-index: 1;
+}
+
+.code-editor textarea:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+.code-editor pre {
+  margin: 0;
+  background: #161b22;
+  color: #c9d1d9;
+  overflow: auto;
+  pointer-events: none;
+}
+
+.code-editor code {
+  padding: 0;
+  border: none;
+}
+
+/* ── syntax tokens ── */
+
+.hl-comment {
+  color: #8b949e;
+  font-style: italic;
+}
+.hl-string {
+  color: #a5d6ff;
+}
+.hl-keyword {
+  color: #ff7b72;
+}
+.hl-type {
+  color: #79c0ff;
+}
+.hl-number {
+  color: #d2a8ff;
+}
+.hl-var {
+  color: #ffa657;
+}
+
+/* ── footer ── */
+
+.footer-bar {
+  display: flex;
+  align-items: baseline;
+  padding-top: 10px;
+}
+
+#status {
+  font-size: 0.78rem;
+  color: #8b949e;
+  flex: 1;
+}
+
+#status.error {
+  color: #f85149;
+}
+#status.success {
+  color: #3fb950;
+}
+
+#version {
+  font-size: 0.7rem;
+  color: #484f58;
+  white-space: nowrap;
+}
+
+/* ── responsive ── */
+
+@media (max-width: 720px) {
+  body {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .editor {
+    grid-template-columns: 1fr;
+    flex: none;
+  }
+
+  .editor > :nth-child(1) {
+    order: 1;
+  }
+  .editor > :nth-child(3) {
+    order: 2;
+  }
+  .editor > :nth-child(2) {
+    order: 3;
+  }
+  .editor > :nth-child(4) {
+    order: 4;
+  }
+
+  .code-editor {
+    height: 40vh;
+  }
+
+  .header {
+    flex-wrap: wrap;
+  }
+
+  .github-link {
+    width: 100%;
+    padding-bottom: 4px;
+  }
+
+  .controls,
+  .controls > label,
+  .controls > .btn-cell {
+    display: block;
+  }
+
+  .controls > label {
+    padding: 0 0 8px 0;
+  }
+
+  .controls > .btn-cell {
+    padding: 12px 0;
+  }
+}
