@@ -1,0 +1,1510 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<samples>
+  <sample id="fibonacci" label="Fibonacci" summary="Iterative and recursive Fibonacci implementations." tags="loops,recursion,basics" featured="true"><![CDATA[
+(module
+  (export "fib_iter" (func $fib_iter))
+  (export "fib_rec" (func $fib_rec))
+
+  ;; Iterative: loop with two accumulators.
+  (func $fib_iter (param $n i32) (result i32)
+    (local $a i32)
+    (local $b i32)
+    (local $i i32)
+
+    (if (i32.lt_s (local.get $n) (i32.const 2))
+      (then (return (i32.const 1))))
+
+    (local.set $a (i32.const 1))
+    (local.set $b (i32.const 1))
+    (local.set $i (i32.const 2))
+
+    (block $exit
+      (loop $loop
+        (br_if $exit (i32.gt_s (local.get $i) (local.get $n)))
+        (local.set $b (i32.add (local.get $a) (local.get $b)))
+        (local.set $a (i32.sub (local.get $b) (local.get $a)))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (local.get $b)
+  )
+
+  ;; Recursive: direct double self-call.
+  (func $fib_rec (param $n i32) (result i32)
+    (if (result i32) (i32.lt_s (local.get $n) (i32.const 2))
+      (then (i32.const 1))
+      (else
+        (i32.add
+          (call $fib_rec (i32.sub (local.get $n) (i32.const 1)))
+          (call $fib_rec (i32.sub (local.get $n) (i32.const 2)))
+        )
+      )
+    )
+  )
+)
+]]></sample>
+  <sample id="add" label="Arithmetic" summary="Small arithmetic helpers with internal calls and select." tags="arithmetic,calls,select"><![CDATA[
+(module
+  (export "add" (func $add))
+  (export "add3" (func $add3))
+  (export "add_abs" (func $add_abs))
+
+  ;; Basic two-operand addition.
+  (func $add (param $a i32) (param $b i32) (result i32)
+    (i32.add (local.get $a) (local.get $b))
+  )
+
+  ;; Three-way addition.
+  (func $add3 (param $a i32) (param $b i32) (param $c i32) (result i32)
+    (i32.add (i32.add (local.get $a) (local.get $b)) (local.get $c))
+  )
+
+  ;; Add absolute values: |a| + |b|.
+  (func $add_abs (param $a i32) (param $b i32) (result i32)
+    (i32.add (call $abs (local.get $a)) (call $abs (local.get $b)))
+  )
+
+  ;; Absolute value via select (internal helper).
+  (func $abs (param $v i32) (result i32)
+    (select
+      (local.get $v)
+      (i32.sub (i32.const 0) (local.get $v))
+      (i32.ge_s (local.get $v) (i32.const 0))
+    )
+  )
+)
+]]></sample>
+  <sample id="factorial" label="Factorial" summary="32-bit and 64-bit factorial using recursion and loops." tags="i64,loops,recursion"><![CDATA[
+(module
+  (export "factorial64_rec" (func $factorial64_rec))
+  (export "factorial64_iter" (func $factorial64_iter))
+  (export "factorial_rec" (func $factorial_rec))
+  (export "factorial_iter" (func $factorial_iter))
+
+  ;; Recursive i64: widens i32 input, returns i64.
+  (func $factorial64_rec (param $n i32) (result i64)
+    (if (result i64) (i32.le_s (local.get $n) (i32.const 1))
+      (then (i64.const 1))
+      (else
+        (i64.mul
+          (i64.extend_i32_s (local.get $n))
+          (call $factorial64_rec (i32.sub (local.get $n) (i32.const 1)))
+        )
+      )
+    )
+  )
+
+  ;; Iterative i64: counter and accumulator both i64.
+  (func $factorial64_iter (param $n i32) (result i64)
+    (local $count i64)
+    (local $result i64)
+    (local.set $count (i64.extend_i32_s (local.get $n)))
+    (local.set $result (i64.const 1))
+
+    (block $done
+      (loop $loop
+        (br_if $done (i64.le_s (local.get $count) (i64.const 1)))
+        (local.set $result
+          (i64.mul (local.get $result) (local.get $count)))
+        (local.set $count (i64.sub (local.get $count) (i64.const 1)))
+        (br $loop)
+      )
+    )
+
+    (local.get $result)
+  )
+
+  ;; Recursive: if-expression returning i32.
+  (func $factorial_rec (param $n i32) (result i32)
+    (if (result i32) (i32.le_s (local.get $n) (i32.const 1))
+      (then (i32.const 1))
+      (else
+        (i32.mul
+          (local.get $n)
+          (call $factorial_rec (i32.sub (local.get $n) (i32.const 1)))
+        )
+      )
+    )
+  )
+
+  ;; Iterative: accumulator loop.
+  (func $factorial_iter (param $n i32) (result i32)
+    (local $result i32)
+    (local.set $result (i32.const 1))
+
+    (block $done
+      (loop $loop
+        (br_if $done (i32.le_s (local.get $n) (i32.const 1)))
+        (local.set $result
+          (i32.mul (local.get $result) (local.get $n)))
+        (local.set $n (i32.sub (local.get $n) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (local.get $result)
+  )
+)
+]]></sample>
+  <sample id="collatz" label="Collatz conjecture" summary="Loop-heavy Collatz steps and peak tracking." tags="loops,branches,integer"><![CDATA[
+(module
+  (export "collatz_steps" (func $collatz_steps))
+  (export "collatz_max" (func $collatz_max))
+
+  ;; Count steps to reach 1.
+  ;; n -> n/2 if even, 3n+1 if odd.
+  (func $collatz_steps (param $n i32) (result i32)
+    (local $steps i32)
+
+    (block $done
+      (loop $loop
+        (br_if $done (i32.le_s (local.get $n) (i32.const 1)))
+        (if (i32.and (local.get $n) (i32.const 1))
+          (then
+            (local.set $n (i32.add
+              (i32.mul (local.get $n) (i32.const 3))
+              (i32.const 1))))
+          (else
+            (local.set $n
+              (i32.shr_u (local.get $n) (i32.const 1)))))
+        (local.set $steps
+          (i32.add (local.get $steps) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (local.get $steps)
+  )
+
+  ;; Highest value reached during the sequence.
+  (func $collatz_max (param $n i32) (result i32)
+    (local $peak i32)
+    (local.set $peak (local.get $n))
+
+    (block $done
+      (loop $loop
+        (br_if $done (i32.le_s (local.get $n) (i32.const 1)))
+        (if (i32.and (local.get $n) (i32.const 1))
+          (then
+            (local.set $n (i32.add
+              (i32.mul (local.get $n) (i32.const 3))
+              (i32.const 1))))
+          (else
+            (local.set $n
+              (i32.shr_u (local.get $n) (i32.const 1)))))
+        (if (i32.gt_s (local.get $n) (local.get $peak))
+          (then (local.set $peak (local.get $n))))
+        (br $loop)
+      )
+    )
+
+    (local.get $peak)
+  )
+)
+]]></sample>
+  <sample id="gcd" label="GCD / LCM" summary="Recursive and iterative Euclidean algorithm plus LCM." tags="math,loops,recursion"><![CDATA[
+(module
+  (export "gcd_rec" (func $gcd_rec))
+  (export "gcd_iter" (func $gcd_iter))
+  (export "lcm" (func $lcm))
+
+  ;; Recursive Euclidean algorithm.
+  (func $gcd_rec (param $a i32) (param $b i32) (result i32)
+    (if (result i32) (i32.eqz (local.get $b))
+      (then (local.get $a))
+      (else
+        (call $gcd_rec
+          (local.get $b)
+          (i32.rem_u (local.get $a) (local.get $b))
+        )
+      )
+    )
+  )
+
+  ;; Iterative Euclidean algorithm.
+  (func $gcd_iter (param $a i32) (param $b i32) (result i32)
+    (local $t i32)
+
+    (block $done
+      (loop $loop
+        (br_if $done (i32.eqz (local.get $b)))
+        (local.set $t (i32.rem_u (local.get $a) (local.get $b)))
+        (local.set $a (local.get $b))
+        (local.set $b (local.get $t))
+        (br $loop)
+      )
+    )
+
+    (local.get $a)
+  )
+
+  ;; Least common multiple via GCD.
+  (func $lcm (param $a i32) (param $b i32) (result i32)
+    (i32.div_u
+      (i32.mul (local.get $a) (local.get $b))
+      (call $gcd_rec (local.get $a) (local.get $b))
+    )
+  )
+)
+]]></sample>
+  <sample id="select" label="Select (min / max / clamp)" summary="Branchless min, max, clamp, and abs via wasm select." tags="select,branchless,control"><![CDATA[
+(module
+  (export "min" (func $min))
+  (export "max" (func $max))
+  (export "clamp" (func $clamp))
+  (export "abs" (func $abs))
+
+  ;; All four use the wasm "select" instruction (ternary).
+
+  (func $min (param $a i32) (param $b i32) (result i32)
+    (select
+      (local.get $a) (local.get $b)
+      (i32.lt_s (local.get $a) (local.get $b)))
+  )
+
+  (func $max (param $a i32) (param $b i32) (result i32)
+    (select
+      (local.get $a) (local.get $b)
+      (i32.gt_s (local.get $a) (local.get $b)))
+  )
+
+  ;; Clamp: composition of min and max.
+  (func $clamp (param $v i32) (param $lo i32) (param $hi i32) (result i32)
+    (call $min
+      (call $max (local.get $v) (local.get $lo))
+      (local.get $hi))
+  )
+
+  ;; Absolute value via branchless select.
+  (func $abs (param $v i32) (result i32)
+    (select
+      (local.get $v)
+      (i32.sub (i32.const 0) (local.get $v))
+      (i32.ge_s (local.get $v) (i32.const 0)))
+  )
+)
+]]></sample>
+  <sample id="global_counter" label="Global counter" summary="Mutable global state with simple exported operations." tags="globals,state,exports"><![CDATA[
+(module
+  (global $count (mut i32) (i32.const 0))
+  (export "increment" (func $increment))
+  (export "decrement" (func $decrement))
+  (export "reset" (func $reset))
+  (export "get_count" (func $get_count))
+
+  (func $increment (param $n i32)
+    (global.set $count
+      (i32.add (global.get $count) (local.get $n)))
+  )
+
+  (func $decrement (param $n i32)
+    (global.set $count
+      (i32.sub (global.get $count) (local.get $n)))
+  )
+
+  (func $reset
+    (global.set $count (i32.const 0))
+  )
+
+  (func $get_count (result i32)
+    (global.get $count)
+  )
+)
+]]></sample>
+  <sample id="memory" label="Memory operations" summary="Loads, stores, swaps, and array walking in linear memory." tags="memory,load/store,arrays" featured="true"><![CDATA[
+(module
+  (memory 1)
+  (export "store_and_load" (func $store_and_load))
+  (export "swap" (func $swap))
+  (export "sum_array" (func $sum_array))
+
+  ;; Store a value and read it back.
+  (func $store_and_load (param $addr i32) (param $val i32) (result i32)
+    (i32.store (local.get $addr) (local.get $val))
+    (i32.load (local.get $addr))
+  )
+
+  ;; Swap two i32 values in memory.
+  (func $swap (param $a i32) (param $b i32)
+    (local $tmp i32)
+    (local.set $tmp (i32.load (local.get $a)))
+    (i32.store (local.get $a) (i32.load (local.get $b)))
+    (i32.store (local.get $b) (local.get $tmp))
+  )
+
+  ;; Sum $count consecutive i32 values starting at $ptr.
+  (func $sum_array (param $ptr i32) (param $count i32) (result i32)
+    (local $sum i32)
+    (local $end i32)
+    (local.set $end
+      (i32.add (local.get $ptr)
+        (i32.shl (local.get $count) (i32.const 2))))
+
+    (block $done
+      (loop $loop
+        (br_if $done
+          (i32.ge_u (local.get $ptr) (local.get $end)))
+        (local.set $sum
+          (i32.add (local.get $sum) (i32.load (local.get $ptr))))
+        (local.set $ptr
+          (i32.add (local.get $ptr) (i32.const 4)))
+        (br $loop)
+      )
+    )
+
+    (local.get $sum)
+  )
+)
+]]></sample>
+  <sample id="strlen" label="String operations" summary="String-like scans over data segments and byte loads." tags="strings,memory,data"><![CDATA[
+(module
+  (memory 1)
+  (data (offset (i32.const 0)) "Hello, WebAssembly!\00")
+  (export "strlen" (func $strlen))
+  (export "char_at" (func $char_at))
+  (export "indexof" (func $indexof))
+
+  ;; Count bytes until a null terminator.
+  (func $strlen (param $ptr i32) (result i32)
+    (local $len i32)
+
+    (block $done
+      (loop $loop
+        (br_if $done
+          (i32.eqz (i32.load8_u
+            (i32.add (local.get $ptr) (local.get $len)))))
+        (local.set $len
+          (i32.add (local.get $len) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (local.get $len)
+  )
+
+  ;; Get byte at index, or -1 if out of bounds.
+  (func $char_at (param $ptr i32) (param $idx i32) (result i32)
+    (if (result i32)
+      (i32.lt_u (local.get $idx) (call $strlen (local.get $ptr)))
+      (then
+        (i32.load8_u (i32.add (local.get $ptr) (local.get $idx))))
+      (else (i32.const -1))
+    )
+  )
+
+  ;; First index of byte $ch in string, or -1.
+  (func $indexof (param $ptr i32) (param $ch i32) (result i32)
+    (local $i i32)
+    (local $c i32)
+
+    (block $done
+      (loop $loop
+        (local.set $c
+          (i32.load8_u (i32.add (local.get $ptr) (local.get $i))))
+        (br_if $done (i32.eqz (local.get $c)))
+        (if (i32.eq (local.get $c) (local.get $ch))
+          (then (return (local.get $i))))
+        (local.set $i
+          (i32.add (local.get $i) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (i32.const -1)
+  )
+)
+]]></sample>
+  <sample id="lookup_table" label="Lookup table" summary="Lookup-table fallback patterns over precomputed data." tags="tables,data,control"><![CDATA[
+(module
+  (memory 1)
+  ;; Squares 0..9 pre-computed as little-endian i32.
+  (data (offset (i32.const 0))
+    "\00\00\00\00"  ;; 0
+    "\01\00\00\00"  ;; 1
+    "\04\00\00\00"  ;; 4
+    "\09\00\00\00"  ;; 9
+    "\10\00\00\00"  ;; 16
+    "\19\00\00\00"  ;; 25
+    "\24\00\00\00"  ;; 36
+    "\31\00\00\00"  ;; 49
+    "\40\00\00\00"  ;; 64
+    "\51\00\00\00") ;; 81
+  (export "square_lookup" (func $square_lookup))
+  (export "square_compute" (func $square_compute))
+  (export "is_perfect_square" (func $is_perfect_square))
+
+  ;; Table lookup for 0..9, fallback to multiply.
+  (func $square_lookup (param $n i32) (result i32)
+    (if (result i32)
+      (i32.and
+        (i32.ge_s (local.get $n) (i32.const 0))
+        (i32.lt_s (local.get $n) (i32.const 10)))
+      (then
+        (i32.load (i32.shl (local.get $n) (i32.const 2))))
+      (else
+        (i32.mul (local.get $n) (local.get $n)))
+    )
+  )
+
+  ;; Always compute, no lookup.
+  (func $square_compute (param $n i32) (result i32)
+    (i32.mul (local.get $n) (local.get $n))
+  )
+
+  ;; Brute-force perfect square check.
+  (func $is_perfect_square (param $n i32) (result i32)
+    (local $i i32)
+
+    (if (i32.lt_s (local.get $n) (i32.const 0))
+      (then (return (i32.const 0))))
+
+    (block $done
+      (loop $loop
+        (br_if $done
+          (i32.gt_s
+            (i32.mul (local.get $i) (local.get $i))
+            (local.get $n)))
+        (if (i32.eq
+              (i32.mul (local.get $i) (local.get $i))
+              (local.get $n))
+          (then (return (i32.const 1))))
+        (local.set $i
+          (i32.add (local.get $i) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (i32.const 0)
+  )
+)
+]]></sample>
+  <sample id="bitwise" label="Bitwise ops" summary="Rotate, count, and popcount style bit intrinsics." tags="bitwise,intrinsics,integer"><![CDATA[
+(module
+  (export "rotl" (func $rotl))
+  (export "rotr" (func $rotr))
+  (export "clz" (func $clz))
+  (export "ctz" (func $ctz))
+  (export "popcnt" (func $popcnt))
+
+  ;; Rotate left.
+  (func $rotl (param $v i32) (param $n i32) (result i32)
+    (i32.rotl (local.get $v) (local.get $n))
+  )
+
+  ;; Rotate right.
+  (func $rotr (param $v i32) (param $n i32) (result i32)
+    (i32.rotr (local.get $v) (local.get $n))
+  )
+
+  ;; Count leading zeros.
+  (func $clz (param $v i32) (result i32)
+    (i32.clz (local.get $v))
+  )
+
+  ;; Count trailing zeros.
+  (func $ctz (param $v i32) (result i32)
+    (i32.ctz (local.get $v))
+  )
+
+  ;; Population count (number of 1-bits).
+  (func $popcnt (param $v i32) (result i32)
+    (i32.popcnt (local.get $v))
+  )
+)
+]]></sample>
+  <sample id="crc32" label="Hashing (CRC32 / DJB2)" summary="CRC32 and DJB2 hashing with shifts, xor, and tables." tags="hashing,loops,bitwise" featured="true"><![CDATA[
+(module
+  (memory 1)
+  (export "init_crc_table" (func $init_crc_table))
+  (export "crc32_table" (func $crc32_table))
+  (export "crc32_bitwise" (func $crc32_bitwise))
+  (export "djb2" (func $djb2))
+
+  ;; Build 256-entry CRC32 lookup table at offset 0.
+  ;; Occupies bytes 0..1023 (256 x i32).
+  (func $init_crc_table
+    (local $i i32)
+    (local $j i32)
+    (local $crc i32)
+
+    (block $done
+      (loop $outer
+        (br_if $done (i32.ge_u (local.get $i) (i32.const 256)))
+        (local.set $crc (local.get $i))
+        (local.set $j (i32.const 0))
+
+        (block $bit_done
+          (loop $bits
+            (br_if $bit_done
+              (i32.ge_u (local.get $j) (i32.const 8)))
+            (if (i32.and (local.get $crc) (i32.const 1))
+              (then
+                (local.set $crc (i32.xor
+                  (i32.shr_u (local.get $crc) (i32.const 1))
+                  (i32.const 0xEDB88320))))
+              (else
+                (local.set $crc
+                  (i32.shr_u (local.get $crc) (i32.const 1)))))
+            (local.set $j
+              (i32.add (local.get $j) (i32.const 1)))
+            (br $bits)
+          )
+        )
+
+        (i32.store
+          (i32.shl (local.get $i) (i32.const 2))
+          (local.get $crc))
+        (local.set $i
+          (i32.add (local.get $i) (i32.const 1)))
+        (br $outer)
+      )
+    )
+  )
+
+  ;; CRC32 via table lookup (call init_crc_table first).
+  ;; Data buffer must be at offset >= 1024.
+  (func $crc32_table (param $ptr i32) (param $len i32) (result i32)
+    (local $crc i32)
+    (local $end i32)
+
+    (local.set $crc (i32.const -1))
+    (local.set $end (i32.add (local.get $ptr) (local.get $len)))
+
+    (block $done
+      (loop $loop
+        (br_if $done
+          (i32.ge_u (local.get $ptr) (local.get $end)))
+        (local.set $crc
+          (i32.xor
+            (i32.load
+              (i32.shl
+                (i32.and
+                  (i32.xor (local.get $crc)
+                    (i32.load8_u (local.get $ptr)))
+                  (i32.const 0xFF))
+                (i32.const 2)))
+            (i32.shr_u (local.get $crc) (i32.const 8))))
+        (local.set $ptr
+          (i32.add (local.get $ptr) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (i32.xor (local.get $crc) (i32.const -1))
+  )
+
+  ;; CRC32 bitwise — no table needed, 8 iterations per byte.
+  (func $crc32_bitwise (param $ptr i32) (param $len i32) (result i32)
+    (local $crc i32)
+    (local $end i32)
+    (local $j i32)
+
+    (local.set $crc (i32.const -1))
+    (local.set $end (i32.add (local.get $ptr) (local.get $len)))
+
+    (block $done
+      (loop $outer
+        (br_if $done
+          (i32.ge_u (local.get $ptr) (local.get $end)))
+        (local.set $crc (i32.xor (local.get $crc)
+          (i32.load8_u (local.get $ptr))))
+
+        (local.set $j (i32.const 0))
+        (block $bit_done
+          (loop $bits
+            (br_if $bit_done
+              (i32.ge_u (local.get $j) (i32.const 8)))
+            (if (i32.and (local.get $crc) (i32.const 1))
+              (then
+                (local.set $crc (i32.xor
+                  (i32.shr_u (local.get $crc) (i32.const 1))
+                  (i32.const 0xEDB88320))))
+              (else
+                (local.set $crc
+                  (i32.shr_u (local.get $crc) (i32.const 1)))))
+            (local.set $j
+              (i32.add (local.get $j) (i32.const 1)))
+            (br $bits)
+          )
+        )
+
+        (local.set $ptr
+          (i32.add (local.get $ptr) (i32.const 1)))
+        (br $outer)
+      )
+    )
+
+    (i32.xor (local.get $crc) (i32.const -1))
+  )
+
+  ;; DJB2 hash of a null-terminated string.
+  (func $djb2 (param $ptr i32) (result i32)
+    (local $hash i32)
+    (local $c i32)
+    (local.set $hash (i32.const 5381))
+
+    (block $done
+      (loop $loop
+        (local.set $c (i32.load8_u (local.get $ptr)))
+        (br_if $done (i32.eqz (local.get $c)))
+        (local.set $hash
+          (i32.add
+            (i32.add
+              (i32.shl (local.get $hash) (i32.const 5))
+              (local.get $hash))
+            (local.get $c)))
+        (local.set $ptr
+          (i32.add (local.get $ptr) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (local.get $hash)
+  )
+)
+]]></sample>
+  <sample id="cast_interception" label="Cast-module interception (32-bit)" summary="Full 32-bit signed/unsigned &lt;-&gt; f32/f64 cast matrix via cast-module imports." tags="casts,numeric,imports" featured="true"><![CDATA[
+(module
+  ;; Import 32-bit type-cast functions from the "cast" module.
+  ;; wasm2lang intercepts these imports and emits native
+  ;; language casts instead of function calls in output.
+  ;; All 8 combinations of signed/unsigned i32 <-> f32/f64 are exercised.
+  (import "cast" "i32_to_f32" (func $i32_to_f32 (param i32) (result f32)))
+  (import "cast" "i32_to_f64" (func $i32_to_f64 (param i32) (result f64)))
+  (import "cast" "f32_to_i32" (func $f32_to_i32 (param f32) (result i32)))
+  (import "cast" "f64_to_i32" (func $f64_to_i32 (param f64) (result i32)))
+  (import "cast" "u32_to_f32" (func $u32_to_f32 (param i32) (result f32)))
+  (import "cast" "u32_to_f64" (func $u32_to_f64 (param i32) (result f64)))
+  (import "cast" "f32_to_u32" (func $f32_to_u32 (param f32) (result i32)))
+  (import "cast" "f64_to_u32" (func $f64_to_u32 (param f64) (result i32)))
+
+  (export "byte_to_unit" (func $byte_to_unit))
+  (export "unit_to_byte" (func $unit_to_byte))
+  (export "mix_channels" (func $mix_channels))
+  (export "round_half_up" (func $round_half_up))
+  (export "hypotenuse_i32" (func $hypotenuse_i32))
+  (export "permille" (func $permille))
+
+  ;; Normalize a byte [0..255] to unit float [0..1].
+  ;; Exercises u32_to_f32 — byte is treated as unsigned.
+  (func $byte_to_unit (param $b i32) (result f32)
+    (f32.div
+      (call $u32_to_f32 (local.get $b))
+      (f32.const 255.0))
+  )
+
+  ;; Quantize unit float [0..1] back to byte [0..255].
+  ;; Exercises f32_to_u32 — result is unsigned.
+  (func $unit_to_byte (param $u f32) (result i32)
+    (call $f32_to_u32
+      (f32.mul (local.get $u) (f32.const 255.0)))
+  )
+
+  ;; Blend signed channels: a + (b - a) * (t / 255).
+  ;; Exercises i32_to_f32 and f32_to_i32 on signed channel values.
+  (func $mix_channels (param $a i32) (param $b i32) (param $t i32) (result i32)
+    (call $f32_to_i32
+      (f32.add
+        (call $i32_to_f32 (local.get $a))
+        (f32.mul
+          (f32.sub
+            (call $i32_to_f32 (local.get $b))
+            (call $i32_to_f32 (local.get $a)))
+          (f32.div
+            (call $i32_to_f32 (local.get $t))
+            (f32.const 255.0)))))
+  )
+
+  ;; Round a double to nearest signed int, half-up: floor(x + 0.5).
+  ;; Exercises f64_to_i32 on a signed result.
+  (func $round_half_up (param $x f64) (result i32)
+    (call $f64_to_i32
+      (f64.floor (f64.add (local.get $x) (f64.const 0.5))))
+  )
+
+  ;; Integer hypotenuse via f64 sqrt: floor(sqrt(a*a + b*b) + 0.5).
+  ;; Exercises i32_to_f64 and f64_to_i32.
+  (func $hypotenuse_i32 (param $a i32) (param $b i32) (result i32)
+    (local $da f64)
+    (local $db f64)
+    (local.set $da (call $i32_to_f64 (local.get $a)))
+    (local.set $db (call $i32_to_f64 (local.get $b)))
+    (call $f64_to_i32
+      (f64.floor
+        (f64.add
+          (f64.sqrt
+            (f64.add
+              (f64.mul (local.get $da) (local.get $da))
+              (f64.mul (local.get $db) (local.get $db))))
+          (f64.const 0.5))))
+  )
+
+  ;; Unsigned permille: (value / total) * 1000, treating both as unsigned.
+  ;; Exercises u32_to_f64 and f64_to_u32.
+  (func $permille (param $value i32) (param $total i32) (result i32)
+    (call $f64_to_u32
+      (f64.mul
+        (f64.div
+          (call $u32_to_f64 (local.get $value))
+          (call $u32_to_f64 (local.get $total)))
+        (f64.const 1000.0)))
+  )
+)
+]]></sample>
+  <sample id="cast_i64_interception" label="Cast-module interception (64-bit)" backends="javascript,java" summary="Full 64-bit signed/unsigned &lt;-&gt; f32/f64 cast matrix (JavaScript BigInt / Java long)." tags="casts,i64,u64,numeric,imports" featured="true"><![CDATA[
+(module
+  ;; Import 64-bit type-cast functions from the "cast" module.
+  ;; wasm2lang intercepts these imports and emits native casts —
+  ;; in JavaScript i64/u64 are BigInt values, in Java they are long.
+  ;; All 8 combinations of signed/unsigned i64 <-> f32/f64 are exercised.
+  (import "cast" "i64_to_f32" (func $i64_to_f32 (param i64) (result f32)))
+  (import "cast" "i64_to_f64" (func $i64_to_f64 (param i64) (result f64)))
+  (import "cast" "f32_to_i64" (func $f32_to_i64 (param f32) (result i64)))
+  (import "cast" "f64_to_i64" (func $f64_to_i64 (param f64) (result i64)))
+  (import "cast" "u64_to_f32" (func $u64_to_f32 (param i64) (result f32)))
+  (import "cast" "u64_to_f64" (func $u64_to_f64 (param i64) (result f64)))
+  (import "cast" "f32_to_u64" (func $f32_to_u64 (param f32) (result i64)))
+  (import "cast" "f64_to_u64" (func $f64_to_u64 (param f64) (result i64)))
+
+  (export "micros_to_seconds" (func $micros_to_seconds))
+  (export "seconds_to_nanos" (func $seconds_to_nanos))
+  (export "bytes_to_gib_f32" (func $bytes_to_gib_f32))
+  (export "gib_to_bytes_f32" (func $gib_to_bytes_f32))
+  (export "scale_u64" (func $scale_u64))
+  (export "checksum_avg" (func $checksum_avg))
+
+  ;; Signed microseconds to fractional seconds via f64.
+  ;; Exercises i64_to_f64 on a signed timestamp.
+  (func $micros_to_seconds (param $us i64) (result f64)
+    (f64.div
+      (call $i64_to_f64 (local.get $us))
+      (f64.const 1000000.0))
+  )
+
+  ;; Fractional seconds to signed nanoseconds.
+  ;; Exercises f64_to_i64 on the reverse conversion.
+  (func $seconds_to_nanos (param $s f64) (result i64)
+    (call $f64_to_i64
+      (f64.mul (local.get $s) (f64.const 1000000000.0)))
+  )
+
+  ;; Signed bytes to gibibytes via single precision.
+  ;; Exercises i64_to_f32 on a storage-size value.
+  (func $bytes_to_gib_f32 (param $b i64) (result f32)
+    (f32.div
+      (call $i64_to_f32 (local.get $b))
+      (f32.const 1073741824.0))
+  )
+
+  ;; Float gibibytes back to signed bytes.
+  ;; Exercises f32_to_i64 on the reverse conversion.
+  (func $gib_to_bytes_f32 (param $g f32) (result i64)
+    (call $f32_to_i64
+      (f32.mul (local.get $g) (f32.const 1073741824.0)))
+  )
+
+  ;; Scale an unsigned 64-bit counter by a double factor.
+  ;; Exercises u64_to_f64 and f64_to_u64.
+  (func $scale_u64 (param $value i64) (param $factor f64) (result i64)
+    (call $f64_to_u64
+      (f64.mul
+        (call $u64_to_f64 (local.get $value))
+        (local.get $factor)))
+  )
+
+  ;; Unsigned checksum average via single-precision float.
+  ;; Exercises u64_to_f32 and f32_to_u64.
+  (func $checksum_avg (param $sum i64) (param $count i64) (result i64)
+    (call $f32_to_u64
+      (f32.div
+        (call $u64_to_f32 (local.get $sum))
+        (call $u64_to_f32 (local.get $count))))
+  )
+)
+]]></sample>
+  <sample id="indirect_calls" label="Indirect calls (ftable)" summary="Function table dispatch and call_indirect examples." tags="tables,call_indirect,dispatch" featured="true"><![CDATA[
+(module
+  (memory 1)
+  (type $binop (func (param i32 i32) (result i32)))
+  (table 4 funcref)
+  (elem (i32.const 0) $add $sub $mul $mod)
+
+  (export "dispatch" (func $dispatch))
+  (export "reduce" (func $reduce))
+  (export "apply_chain" (func $apply_chain))
+
+  (func $add (param $a i32) (param $b i32) (result i32)
+    (i32.add (local.get $a) (local.get $b)))
+
+  (func $sub (param $a i32) (param $b i32) (result i32)
+    (i32.sub (local.get $a) (local.get $b)))
+
+  (func $mul (param $a i32) (param $b i32) (result i32)
+    (i32.mul (local.get $a) (local.get $b)))
+
+  (func $mod (param $a i32) (param $b i32) (result i32)
+    (i32.rem_s (local.get $a) (local.get $b)))
+
+  ;; Dispatch: call table[op](a, b).
+  ;; op: 0=add, 1=sub, 2=mul, 3=mod.
+  (func $dispatch (param $op i32) (param $a i32) (param $b i32) (result i32)
+    (call_indirect (type $binop)
+      (local.get $a) (local.get $b) (local.get $op))
+  )
+
+  ;; Reduce $count values at $ptr using table[op].
+  ;; Returns accumulated result.
+  (func $reduce (param $op i32) (param $init i32)
+                (param $ptr i32) (param $count i32) (result i32)
+    (local $acc i32)
+    (local $end i32)
+    (local.set $acc (local.get $init))
+    (local.set $end
+      (i32.add (local.get $ptr)
+        (i32.shl (local.get $count) (i32.const 2))))
+
+    (block $done
+      (loop $loop
+        (br_if $done
+          (i32.ge_u (local.get $ptr) (local.get $end)))
+        (local.set $acc
+          (call_indirect (type $binop)
+            (local.get $acc)
+            (i32.load (local.get $ptr))
+            (local.get $op)))
+        (local.set $ptr
+          (i32.add (local.get $ptr) (i32.const 4)))
+        (br $loop)))
+
+    (local.get $acc)
+  )
+
+  ;; Apply a chain of operations: (((seed op0 v0) op1 v1) op2 v2).
+  ;; 3 fixed steps, each with its own op index.
+  (func $apply_chain
+    (param $seed i32)
+    (param $op0 i32) (param $v0 i32)
+    (param $op1 i32) (param $v1 i32)
+    (param $op2 i32) (param $v2 i32)
+    (result i32)
+
+    (call_indirect (type $binop)
+      (call_indirect (type $binop)
+        (call_indirect (type $binop)
+          (local.get $seed) (local.get $v0) (local.get $op0))
+        (local.get $v1) (local.get $op1))
+      (local.get $v2) (local.get $op2))
+  )
+)
+]]></sample>
+  <sample id="simd_vectors" label="SIMD vectors (Java only)" backends="java" summary="Vector lane operations and arithmetic for Java output." tags="SIMD,v128,Java" featured="true"><![CDATA[
+(module
+  (export "dot_product" (func $dot_product))
+  (export "sum_lanes" (func $sum_lanes))
+  (export "blend" (func $blend))
+  (export "negate_abs" (func $negate_abs))
+  (export "shift_and_mask" (func $shift_and_mask))
+
+  ;; Dot product of two 4-element i32 vectors via SIMD.
+  ;; dot(a,b) = a0*b0 + a1*b1 + a2*b2 + a3*b3
+  (func $dot_product
+    (param $a0 i32) (param $a1 i32) (param $a2 i32) (param $a3 i32)
+    (param $b0 i32) (param $b1 i32) (param $b2 i32) (param $b3 i32)
+    (result i32)
+    (local $prod v128)
+
+    (local.set $prod
+      (i32x4.mul
+        (i32x4.replace_lane 3
+          (i32x4.replace_lane 2
+            (i32x4.replace_lane 1
+              (i32x4.splat (local.get $a0))
+              (local.get $a1))
+            (local.get $a2))
+          (local.get $a3))
+        (i32x4.replace_lane 3
+          (i32x4.replace_lane 2
+            (i32x4.replace_lane 1
+              (i32x4.splat (local.get $b0))
+              (local.get $b1))
+            (local.get $b2))
+          (local.get $b3))))
+
+    (i32.add
+      (i32.add
+        (i32x4.extract_lane 0 (local.get $prod))
+        (i32x4.extract_lane 1 (local.get $prod)))
+      (i32.add
+        (i32x4.extract_lane 2 (local.get $prod))
+        (i32x4.extract_lane 3 (local.get $prod))))
+  )
+
+  ;; Sum all four lanes of a splatted+shifted vector.
+  ;; Builds [a, a+1, a+2, a+3] then sums.
+  (func $sum_lanes (param $a i32) (result i32)
+    (local $v v128)
+    (local.set $v
+      (i32x4.add
+        (i32x4.splat (local.get $a))
+        (v128.const i32x4 0 1 2 3)))
+
+    (i32.add
+      (i32.add
+        (i32x4.extract_lane 0 (local.get $v))
+        (i32x4.extract_lane 1 (local.get $v)))
+      (i32.add
+        (i32x4.extract_lane 2 (local.get $v))
+        (i32x4.extract_lane 3 (local.get $v))))
+  )
+
+  ;; Bitwise blend: select bits from a or b per mask.
+  ;; result = (a & mask) | (b & ~mask)
+  (func $blend (param $a i32) (param $b i32) (param $mask i32) (result i32)
+    (i32x4.extract_lane 0
+      (v128.bitselect
+        (i32x4.splat (local.get $a))
+        (i32x4.splat (local.get $b))
+        (i32x4.splat (local.get $mask))))
+  )
+
+  ;; Negate then absolute value: abs(-x).
+  (func $negate_abs (param $x i32) (result i32)
+    (i32x4.extract_lane 0
+      (i32x4.abs
+        (i32x4.neg (i32x4.splat (local.get $x)))))
+  )
+
+  ;; Shift left by n, then AND with splat mask.
+  (func $shift_and_mask (param $val i32) (param $n i32) (param $mask i32) (result i32)
+    (i32x4.extract_lane 0
+      (v128.and
+        (i32x4.shl (i32x4.splat (local.get $val)) (local.get $n))
+        (i32x4.splat (local.get $mask))))
+  )
+)
+]]></sample>
+  <sample id="br_table" label="Switch dispatch (br_table)" summary="Switch-like dispatch recovered from br_table." tags="br_table,switch,control"><![CDATA[
+(module
+  (export "eval_rpn_op" (func $eval_rpn_op))
+  (export "classify" (func $classify))
+
+  ;; Simple RPN calculator step.
+  ;; op: 0=add, 1=sub, 2=mul, 3=div, 4=mod.
+  ;; Returns result, or 0 for unknown op.
+  (func $eval_rpn_op (param $a i32) (param $b i32) (param $op i32) (result i32)
+    (block $default
+      (block $mod
+        (block $div
+          (block $mul
+            (block $sub
+              (block $add
+                (br_table $add $sub $mul $div $mod $default
+                  (local.get $op)))
+              ;; op 0: add
+              (return (i32.add (local.get $a) (local.get $b))))
+            ;; op 1: sub
+            (return (i32.sub (local.get $a) (local.get $b))))
+          ;; op 2: mul
+          (return (i32.mul (local.get $a) (local.get $b))))
+        ;; op 3: div
+        (return (i32.div_s (local.get $a) (local.get $b))))
+      ;; op 4: mod
+      (return (i32.rem_s (local.get $a) (local.get $b))))
+    ;; default
+    (i32.const 0)
+  )
+
+  ;; Classify an ASCII character.
+  ;; Returns: 1=digit, 2=uppercase, 3=lowercase, 0=other.
+  (func $classify (param $ch i32) (result i32)
+    (if (i32.and
+          (i32.ge_u (local.get $ch) (i32.const 48))
+          (i32.le_u (local.get $ch) (i32.const 57)))
+      (then (return (i32.const 1))))
+    (if (i32.and
+          (i32.ge_u (local.get $ch) (i32.const 65))
+          (i32.le_u (local.get $ch) (i32.const 90)))
+      (then (return (i32.const 2))))
+    (if (i32.and
+          (i32.ge_u (local.get $ch) (i32.const 97))
+          (i32.le_u (local.get $ch) (i32.const 122)))
+      (then (return (i32.const 3))))
+    (i32.const 0)
+  )
+)
+]]></sample>
+  <sample id="nested_blocks" label="Nested blocks (multi-level break)" summary="Multi-level break recovery through nested blocks." tags="blocks,breaks,control"><![CDATA[
+(module
+  (export "find_2d" (func $find_2d))
+  (export "early_exit_chain" (func $early_exit_chain))
+
+  (memory 1)
+
+  ;; Search a rows x cols i32 matrix in memory for a value.
+  ;; Returns row * cols + col (flat index), or -1 if not found.
+  ;; Demonstrates nested blocks with br to outer scope.
+  (func $find_2d (param $ptr i32) (param $rows i32) (param $cols i32)
+                  (param $needle i32) (result i32)
+    (local $r i32)
+    (local $c i32)
+    (local $addr i32)
+
+    (block $not_found
+      (block $found
+        (loop $row_loop
+          (br_if $not_found
+            (i32.ge_u (local.get $r) (local.get $rows)))
+          (local.set $c (i32.const 0))
+
+          (loop $col_loop
+            (br_if $row_loop
+              (i32.ge_u (local.get $c) (local.get $cols)))
+            (local.set $addr
+              (i32.add (local.get $ptr)
+                (i32.shl
+                  (i32.add
+                    (i32.mul (local.get $r) (local.get $cols))
+                    (local.get $c))
+                  (i32.const 2))))
+            ;; Break two levels out on match.
+            (br_if $found
+              (i32.eq (i32.load (local.get $addr)) (local.get $needle)))
+            (local.set $c (i32.add (local.get $c) (i32.const 1)))
+            (br $col_loop))
+
+          (local.set $r (i32.add (local.get $r) (i32.const 1)))
+          (br $row_loop)))
+
+      ;; $found: compute flat index.
+      (return (i32.add
+        (i32.mul (local.get $r) (local.get $cols))
+        (local.get $c))))
+
+    ;; $not_found
+    (i32.const -1)
+  )
+
+  ;; Chain of validation checks — break to $fail on any error.
+  ;; Returns 1 if all pass, 0 otherwise.
+  (func $early_exit_chain (param $a i32) (param $b i32) (param $c i32) (result i32)
+    (block $fail
+      ;; Check a > 0
+      (br_if $fail (i32.le_s (local.get $a) (i32.const 0)))
+      ;; Check b in range [1..100]
+      (br_if $fail (i32.lt_s (local.get $b) (i32.const 1)))
+      (br_if $fail (i32.gt_s (local.get $b) (i32.const 100)))
+      ;; Check c != 0
+      (br_if $fail (i32.eqz (local.get $c)))
+      ;; Check a + b < 200
+      (br_if $fail
+        (i32.ge_s
+          (i32.add (local.get $a) (local.get $b))
+          (i32.const 200)))
+      ;; All checks passed.
+      (return (i32.const 1)))
+    (i32.const 0)
+  )
+)
+]]></sample>
+  <sample id="loop_forms" label="Loop forms (for / while / do-while)" summary="Different structured loop shapes recovered by codegen." tags="loops,for,do-while"><![CDATA[
+(module
+  (export "for_count" (func $for_count))
+  (export "while_count" (func $while_count))
+  (export "do_while_count" (func $do_while_count))
+  (export "if_guarded_sum" (func $if_guarded_sum))
+  (export "multi_guard_sum" (func $multi_guard_sum))
+
+  ;; Trailing self-continue → for (;;) with leading break guard.
+  ;; Matched as lc$ / lf$ (loopKind 'for') by LoopSimplificationPass.
+  (func $for_count (param $n i32) (result i32)
+    (local $i i32)
+    (block $exit
+      (loop $loop
+        (br_if $exit (i32.ge_s (local.get $i) (local.get $n)))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $loop)))
+    (local.get $i)
+  )
+
+  ;; Entry-guard + trailing self-continue, loop immediately enclosed.
+  ;; Rule-1 promotes to lw$ / ly$ (loopKind 'while') → emitted as while (cond).
+  (func $while_count (param $n i32) (result i32)
+    (local $i i32)
+    (block $exit
+      (loop $loop
+        (br_if $exit (i32.ge_s (local.get $i) (local.get $n)))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $loop)))
+    (local.get $i)
+  )
+
+  ;; Trailing conditional self-continue, no block wrapper.
+  ;; Matched as le$ (loopKind 'dowhile') → emitted as do { ... } while (cond).
+  (func $do_while_count (param $n i32) (result i32)
+    (local $i i32)
+    (loop $loop
+      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+      (br_if $loop (i32.lt_s (local.get $i) (local.get $n))))
+    (local.get $i)
+  )
+
+  ;; If-guarded while pattern produced by binaryen:max.
+  ;; Body is a lone if-no-else whose then-arm ends with br $loop.
+  ;; Matched as lw$ / ly$ → still emitted as while (cond).
+  (func $if_guarded_sum (param $n i32) (result i32)
+    (local $i i32)
+    (local $sum i32)
+    (loop $loop
+      (if (i32.lt_s (local.get $i) (local.get $n))
+        (then
+          (local.set $sum (i32.add (local.get $sum) (local.get $i)))
+          (local.set $i  (i32.add (local.get $i)  (i32.const 1)))
+          (br $loop))))
+    (local.get $sum)
+  )
+
+  ;; Multiple entry guards at the top of the loop body.
+  ;; Combined into a single while (g0 && g1) by the pass.
+  (func $multi_guard_sum (param $n i32) (param $cap i32) (result i32)
+    (local $i i32)
+    (local $sum i32)
+    (block $exit
+      (loop $loop
+        (br_if $exit (i32.ge_s (local.get $i)   (local.get $n)))
+        (br_if $exit (i32.ge_s (local.get $sum) (local.get $cap)))
+        (local.set $sum (i32.add (local.get $sum) (local.get $i)))
+        (local.set $i   (i32.add (local.get $i)   (i32.const 1)))
+        (br $loop)))
+    (local.get $sum)
+  )
+)
+]]></sample>
+  <sample id="if_else_chain" label="If-else recovery (chained if-break)" summary="Chained if-break control flow turned back into branches." tags="if/else,branches,control"><![CDATA[
+(module
+  (export "sign" (func $sign))
+  (export "bucket" (func $bucket))
+  (export "label_kept" (func $label_kept))
+
+  ;; Single if-then-break + else body.
+  ;; Chain length = 1 → IfElseRecoveryPass elides the enclosing block label
+  ;; and emits a single if / else instead of labeled-break control flow.
+  (func $sign (param $x i32) (result i32)
+    (local $r i32)
+    (block $done
+      (if (i32.gt_s (local.get $x) (i32.const 0))
+        (then (local.set $r (i32.const 1)) (br $done)))
+      (if (i32.lt_s (local.get $x) (i32.const 0))
+        (then (local.set $r (i32.const -1)) (br $done)))
+      (local.set $r (i32.const 0)))
+    (local.get $r)
+  )
+
+  ;; Three chained if-then-break patterns + else body (chain length = 3).
+  ;; Recovered into if / else if / else if / else ladder, label elided.
+  (func $bucket (param $x i32) (result i32)
+    (local $r i32)
+    (block $done
+      (if (i32.gt_s (local.get $x) (i32.const 100))
+        (then (local.set $r (i32.const 3)) (br $done)))
+      (if (i32.gt_s (local.get $x) (i32.const 10))
+        (then (local.set $r (i32.const 2)) (br $done)))
+      (if (i32.gt_s (local.get $x) (i32.const 0))
+        (then (local.set $r (i32.const 1)) (br $done)))
+      (local.set $r (i32.const 0)))
+    (local.get $r)
+  )
+
+  ;; Inner then-arm contains a nested br $done, so the block is referenced
+  ;; more than once.  Recovery still fires, but the block label is kept.
+  (func $label_kept (param $x i32) (param $y i32) (result i32)
+    (local $r i32)
+    (block $done
+      (if (i32.gt_s (local.get $x) (i32.const 0))
+        (then
+          (if (i32.gt_s (local.get $y) (i32.const 50))
+            (then (br $done)))
+          (local.set $r (i32.mul (local.get $x) (local.get $y)))
+          (br $done)))
+      (local.set $r (i32.add (local.get $x) (local.get $y))))
+    (local.get $r)
+  )
+)
+]]></sample>
+  <sample id="block_guards" label="Block guard elision" summary="Guard blocks that collapse into cleaner control flow." tags="guards,control,cleanup"><![CDATA[
+(module
+  (export "guard_simple" (func $guard_simple))
+  (export "guard_multi_body" (func $guard_multi_body))
+  (export "guard_kept" (func $guard_kept))
+
+  ;; Leading br_if guard as block's first child.
+  ;; BlockGuardElisionPass rewrites (block $L (br_if $L cond) body)
+  ;; into an equivalent if (!cond) { body } — the $L label is no longer
+  ;; referenced and the enclosing block disappears.
+  (func $guard_simple (param $x i32) (result i32)
+    (local $r i32)
+    (block $done
+      (br_if $done (i32.le_s (local.get $x) (i32.const 0)))
+      (local.set $r (local.get $x)))
+    (local.get $r)
+  )
+
+  ;; Same pattern with multiple body children — still fully elided because
+  ;; the body has no remaining references to $done.
+  (func $guard_multi_body (param $x i32) (result i32)
+    (local $r i32)
+    (block $done
+      (br_if $done (i32.eqz (local.get $x)))
+      (local.set $r (i32.mul (local.get $x) (i32.const 2)))
+      (local.set $r (i32.add (local.get $r) (i32.const 1))))
+    (local.get $r)
+  )
+
+  ;; Body contains a second br_if $done, so the label is still live.
+  ;; Pass only rewrites the leading guard — the inner break keeps a
+  ;; (now named) block, or if unnamed the inner break will target a
+  ;; nearby surviving label.
+  (func $guard_kept (param $x i32) (param $y i32) (result i32)
+    (local $r i32)
+    (block $done
+      (br_if $done (i32.le_s (local.get $x) (i32.const 0)))
+      (local.set $r (local.get $x))
+      (br_if $done (i32.gt_s (local.get $y) (i32.const 50)))
+      (local.set $r (i32.mul (local.get $x) (local.get $y))))
+    (local.get $r)
+  )
+)
+]]></sample>
+  <sample id="switch_variants" label="Switch variants (br_table / fallthrough)" summary="Different switch patterns including fallthrough handling." tags="switch,fallthrough,br_table"><![CDATA[
+(module
+  (export "flat_switch" (func $flat_switch))
+  (export "requires_label" (func $requires_label))
+  (export "terminator_dispatch" (func $terminator_dispatch))
+  (export "non_wrapping_dispatch" (func $non_wrapping_dispatch))
+
+  ;; Canonical flat switch: nested blocks + br_table at the innermost level.
+  ;; Detected as sw$ — emitted as a native switch (idx) { case 0: ... } ladder.
+  (func $flat_switch (param $idx i32) (result i32)
+    (local $r i32)
+    (block $exit
+      (block $case2
+        (block $case1
+          (block $case0
+            (br_table $case0 $case1 $case2 $exit (local.get $idx)))
+          (local.set $r (i32.const 10)) (br $exit))
+        (local.set $r (i32.const 20)) (br $exit))
+      (local.set $r (i32.const 30)))
+    (local.get $r)
+  )
+
+  ;; Case body contains a conditional break to the outer dispatch block.
+  ;; The switch emission must keep the outer label so the inner break
+  ;; resolves — the emitter marks state.usedLabels for the exit target.
+  (func $requires_label (param $idx i32) (result i32)
+    (local $r i32)
+    (block $exit
+      (block $case2
+        (block $case1
+          (block $case0
+            (br_table $case0 $case1 $case2 $exit (local.get $idx)))
+          (if (i32.eq (local.get $idx) (i32.const 99))
+            (then (local.set $r (i32.const 77)) (br $exit)))
+          (local.set $r (i32.const 10)) (br $exit))
+        (local.set $r (i32.const 20)) (br $exit))
+      (local.set $r (i32.const 30)))
+    (local.get $r)
+  )
+
+  ;; Each case body ends with return (a terminator) rather than br.
+  ;; The flat-switch detector accepts return / unreachable as valid
+  ;; chain terminators — no synthetic fall-through breaks are inserted.
+  (func $terminator_dispatch (param $a i32) (param $b i32) (param $op i32) (result i32)
+    (block $default
+      (block $mod
+        (block $div
+          (block $mul
+            (block $sub
+              (block $add
+                (br_table $add $sub $mul $div $mod $default (local.get $op)))
+              (return (i32.add (local.get $a) (local.get $b))))
+            (return (i32.sub (local.get $a) (local.get $b))))
+          (return (i32.mul (local.get $a) (local.get $b))))
+        (return (i32.div_s (local.get $a) (local.get $b))))
+      (return (i32.rem_s (local.get $a) (local.get $b))))
+    (i32.const 0)
+  )
+
+  ;; Dispatch block isn't the first child of its parent — it's preceded
+  ;; by `$r = 100`.  Detection renames instead of wrapping, and trailing
+  ;; code after the last inner block remains the final case body.
+  (func $non_wrapping_dispatch (param $idx i32) (result i32)
+    (local $r i32)
+    (local.set $r (i32.const 100))
+    (block $exit
+      (block $case2
+        (block $case1
+          (block $case0
+            (br_table $case0 $case1 $case2 $exit (local.get $idx)))
+          (local.set $r (i32.const 10)) (br $exit))
+        (local.set $r (i32.const 20)) (br $exit))
+      (local.set $r (i32.const 30)))
+    (local.get $r)
+  )
+)
+]]></sample>
+  <sample id="state_machine" label="State machine (root-switch + epilogue)" summary="Root-switch state machine with shared epilogue blocks." tags="state machine,switch,control" featured="true"><![CDATA[
+(module
+  (export "run" (func $run))
+
+  ;; Simple state machine driven by br_table inside a loop.  The dispatch
+  ;; is the first child of its loop, so it wraps together with the trailing
+  ;; epilogue into a sw$-prefixed block.  Epilogue breaks target the outer
+  ;; $done block with the correct depth — the detector preserves this.
+  ;;
+  ;; States:
+  ;;   0: double $x, advance to state 1
+  ;;   1: decrement $x, advance to state 2
+  ;;   2: fall through to epilogue; if $x > 50 we store -1 and exit, else
+  ;;      bump $x by 25 and restart at state 0.
+  (func $run (param $x i32) (param $state i32) (result i32)
+    (local $r i32)
+    (block $done
+      (loop $loop
+        (block $s2
+          (block $s1
+            (block $s0
+              (br_table $s0 $s1 $s2 $done (local.get $state)))
+            ;; state 0
+            (local.set $x (i32.mul (local.get $x) (i32.const 2)))
+            (local.set $state (i32.const 1))
+            (br $loop))
+          ;; state 1
+          (local.set $x (i32.sub (local.get $x) (i32.const 1)))
+          (local.set $state (i32.const 2))
+          (br $loop))
+        ;; epilogue — runs when state 2 falls through
+        (if (i32.gt_s (local.get $x) (i32.const 50))
+          (then
+            (local.set $r (i32.const -1))
+            (br $done)))
+        (local.set $x (i32.add (local.get $x) (i32.const 25)))
+        (local.set $state (i32.const 0))
+        (br $loop)))
+    (if (i32.eqz (local.get $r))
+      (then (local.set $r (local.get $x))))
+    (local.get $r)
+  )
+)
+]]></sample>
+  <sample id="bigint_i64" label="BigInt i64 ops (JavaScript / Java)" backends="javascript,java" summary="i64-focused examples for BigInt-style JS and Java output." tags="i64,BigInt,numeric" featured="true"><![CDATA[
+(module
+  (export "mix64" (func $mix64))
+  (export "splitmix64_step" (func $splitmix64_step))
+  (export "rotl64" (func $rotl64))
+  (export "popcnt64" (func $popcnt64))
+  (export "mul_hi_lo" (func $mul_hi_lo))
+
+  ;; SplitMix64-style avalanche mix.  Exercises i64 xor / shr_u / mul with
+  ;; constants that don't fit in i32 — a good showcase of the JavaScript
+  ;; backend's native BigInt arithmetic (vs the asm.js backend, which
+  ;; goes through a pair-of-i32 lowering pipeline).
+  (func $mix64 (param $x i64) (result i64)
+    (local.set $x
+      (i64.mul
+        (i64.xor (local.get $x) (i64.shr_u (local.get $x) (i64.const 30)))
+        (i64.const 0xBF58476D1CE4E5B9)))
+    (local.set $x
+      (i64.mul
+        (i64.xor (local.get $x) (i64.shr_u (local.get $x) (i64.const 27)))
+        (i64.const 0x94D049BB133111EB)))
+    (i64.xor (local.get $x) (i64.shr_u (local.get $x) (i64.const 31)))
+  )
+
+  ;; SplitMix64 step: advance state by the golden gamma, then mix.
+  (func $splitmix64_step (param $state i64) (result i64)
+    (call $mix64
+      (i64.add (local.get $state) (i64.const 0x9E3779B97F4A7C15)))
+  )
+
+  ;; 64-bit rotate left (compiles to i64.rotl then to BigInt ops in JS).
+  (func $rotl64 (param $v i64) (param $n i64) (result i64)
+    (i64.rotl (local.get $v) (local.get $n))
+  )
+
+  ;; 64-bit popcount.
+  (func $popcnt64 (param $v i64) (result i64)
+    (i64.popcnt (local.get $v))
+  )
+
+  ;; Split a 64-bit product into hi/lo halves.  Returns lo via return
+  ;; value and stores hi at memory offset 0 — combined to show both an
+  ;; i64 truncation (wrap_i32) and a shift-and-wrap.
+  (memory 1)
+  (func $mul_hi_lo (param $a i64) (param $b i64) (result i32)
+    (local $p i64)
+    (local.set $p (i64.mul (local.get $a) (local.get $b)))
+    (i32.store (i32.const 0)
+      (i32.wrap_i64 (i64.shr_u (local.get $p) (i64.const 32))))
+    (i32.wrap_i64 (local.get $p))
+  )
+)
+]]></sample>
+  <sample id="float_math" label="Float math (f64)" summary="Floating-point arithmetic and comparisons in f64." tags="f64,numeric,math"><![CDATA[
+(module
+  (export "distance" (func $distance))
+  (export "lerp" (func $lerp))
+  (export "normalize_angle" (func $normalize_angle))
+  (export "approx_inv_sqrt" (func $approx_inv_sqrt))
+
+  ;; Euclidean distance between two 2D points.
+  (func $distance (param $x1 f64) (param $y1 f64)
+                   (param $x2 f64) (param $y2 f64) (result f64)
+    (local $dx f64)
+    (local $dy f64)
+    (local.set $dx (f64.sub (local.get $x2) (local.get $x1)))
+    (local.set $dy (f64.sub (local.get $y2) (local.get $y1)))
+    (f64.sqrt (f64.add
+      (f64.mul (local.get $dx) (local.get $dx))
+      (f64.mul (local.get $dy) (local.get $dy))))
+  )
+
+  ;; Linear interpolation: a + (b - a) * t, where t in [0, 1].
+  (func $lerp (param $a f64) (param $b f64) (param $t f64) (result f64)
+    (f64.add
+      (local.get $a)
+      (f64.mul
+        (f64.sub (local.get $b) (local.get $a))
+        (local.get $t)))
+  )
+
+  ;; Normalize angle to [0, 360) degrees.
+  (func $normalize_angle (param $deg f64) (result f64)
+    (local $r f64)
+    (local.set $r
+      (f64.sub (local.get $deg)
+        (f64.mul
+          (f64.floor (f64.div (local.get $deg) (f64.const 360.0)))
+          (f64.const 360.0))))
+    ;; Handle negative remainder.
+    (if (f64.lt (local.get $r) (f64.const 0.0))
+      (then
+        (local.set $r
+          (f64.add (local.get $r) (f64.const 360.0)))))
+    (local.get $r)
+  )
+
+  ;; Newton-Raphson step for inverse square root: 1/sqrt(x).
+  ;; One iteration from initial guess g: g * (1.5 - 0.5*x*g*g).
+  (func $approx_inv_sqrt (param $x f64) (param $guess f64) (result f64)
+    (f64.mul
+      (local.get $guess)
+      (f64.sub
+        (f64.const 1.5)
+        (f64.mul
+          (f64.mul (f64.const 0.5) (local.get $x))
+          (f64.mul (local.get $guess) (local.get $guess)))))
+  )
+)
+]]></sample>
+</samples>
